@@ -1,0 +1,163 @@
+File Encryption Program in C.
+
+/*		 WARNING : do not give the have the same sourcefile and
+destinationfile, encrypting or decrypting, this bug will be worked
+out as i get more interested in file encryption
+*/
+
+#include <stdio.h>
+
+#define ENCRYPTION_FORMULA  (int) Byte + key
+#define DECRYPTION_FORMULA  (int) Byte - key
+
+int Encrypt(char * FILENAME, char * NEW_FILENAME)
+{
+		 //printf("Loaded Encrypt");
+		 FILE *inFile;		 		 		 		 		 //Declare inFile
+		 FILE *outFile;		 		 		 		 		 //Declare outFile
+
+		 char key;
+		 char Byte;
+		 char newByte;
+		 int n;
+
+
+		 printf("1");
+		 int i=0;
+
+		 inFile = fopen(FILENAME,"rb");
+		 outFile = fopen(NEW_FILENAME, "w");
+
+		 if(inFile==NULL)
+		 		 printf("Error: Can't Open inFile");
+
+		 if(outFile==NULL)
+		 {
+		 		 printf("Error: Can't open outFile.
+");
+		 return 1;
+		 }
+		 else
+		 {
+
+		 		 printf("File Opened, Encrypting");
+		 		 while(1)
+		 		 {
+		 		 		 printf(".");
+
+
+		 		 		 if(Byte!=EOF)
+		 		 		 {
+		 		 		 		 Byte=fgetc(inFile);
+		 		 		 //		 printf("%d",Byte);
+		 		 		 		 newByte=Byte+key;
+
+		 		 		 		 fputc(newByte,outFile);
+
+		 		 		 }
+
+		 		 		 else
+		 		 		 {
+		 		 		 		 printf("End of File");
+		 		 		 		 break;
+		 		 		 }
+		 		 }
+		 fclose(inFile);
+		 fclose(outFile);
+
+		 }
+}
+
+int Decrypt (char *FILENAME, char *NEW_FILENAME)
+{
+		 //printf("Loaded Decrypt");
+		 FILE *inFile;		 		 		 		 		 //Declare inFile
+		 FILE *outFile;		 		 		 		 		 //Declare outFile
+
+		 char key;
+		 char Byte;
+		 char newByte;
+		 printf("2");
+		 int i=0;
+
+		 inFile = fopen(FILENAME,"rb");
+		 outFile = fopen(NEW_FILENAME, "w");
+
+		 if(inFile==NULL)
+		 		 printf("Error: Can't Open inFile");
+
+		 if(outFile==NULL)
+		 {
+		 		 printf("Error: Can't open outFile.");
+		 return 1;
+		 }
+		 else
+		 {
+
+		 		 printf("File Opened, Decrypting");
+		 		 while(1)
+		 		 {
+		 		 		 printf(".");
+
+
+		 		 		 if(Byte!=EOF)
+		 		 		 {
+		 		 		 		 Byte=fgetc(inFile);
+		 		 		 //		 printf("%d",Byte);
+		 		 		 		 newByte=Byte-key;
+
+		 		 		 		 fputc(newByte,outFile);
+
+		 		 		 }
+
+		 		 		 else
+		 		 		 {
+		 		 		 		 printf("End of File");
+		 		 		 		 break;
+		 		 		 }
+		 		 }
+		 fclose(inFile);
+		 fclose(outFile);
+
+		 }
+}
+
+int main()
+{
+		 char encFile[2000];
+		 char newencFile[2000];
+		 char decFile[2000];
+		 char newdecFile[2000];
+		
+		 char *key;
+
+		 int choice;
+
+		 printf("NOTE: you must Decrypt the file with the same file extension!!!");
+		 printf("Enter 1 to Encrypt  / 2 to Decrypt");
+		 scanf("%d",&choice);
+		 
+		 printf("Enter key");
+		 scanf("%s", &key);
+		 switch(choice)
+		 {
+		 case 1:
+		 		 		 printf("Enter the Source Filename:  ");
+		 		 		 scanf("%s",&encFile);
+		 		 		 printf("Enter the Destination Filename:   ");
+		 		 		 scanf("%s",&newencFile);
+		 		 		 Encrypt(encFile, newencFile);
+		 		 break;
+		 case 2:
+		 		 		 printf("Enter the Source Filename:   ");
+		 		 		 scanf("%s",&decFile);
+		 		 		 printf("Enter the Destination Filename:   ");
+		 		 		 scanf("%s",&newdecFile);
+		 		 		 Decrypt(decFile, newdecFile);
+		 		 break;
+
+		 }
+
+		 return 0;
+}
+
