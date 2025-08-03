@@ -1,6 +1,6 @@
 # C.Library.CCSPICCProjects
 
-This project contains programming with CCS PIC C compiler for baseline PIC MCUs from Microchip.
+This repository contains multiple projects about programming with CCS PIC C compiler for baseline PIC MCUs from Microchip. Programming for Arudino/ESP8266/ESP32/ESPx boards.
 
 35. **ESP_GameHub_v2 - Loads html games on an ESP and sets it up as a game hub. You can play offline or online.**
 - Flash the sketch ESP_GameHub_v2.ino.
