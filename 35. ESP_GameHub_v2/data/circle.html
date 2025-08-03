@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Click the Circle Game</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: #fff;       /* white background */
+      color: #000;            /* black text for contrast */
+      overflow: hidden;
+    }
+    header {
+      text-align: center;
+      padding: 20px;
+      font-size: 24px;
+    }
+    #controls {
+      text-align: center;
+      margin-bottom: 20px;
+      gap: 10px;
+    }
+    #controls button {
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      background-color: #f0f0f0;
+    }
+    #controls button:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+    #game-info {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      margin-bottom: 10px;
+      font-size: 18px;
+    }
+    #timer-box {
+      display: none; /* hide the timer */
+    }
+    #circle {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: linear-gradient(145deg, #ff416c, #ff4b2b);
+      position: absolute;
+      box-shadow: 0 0 15px rgba(255, 75, 43, 0.8);
+      cursor: pointer;
+      display: none;
+      /* transition removed */
+    }
+    #game-over {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 36px;
+      color: #000;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <header>Click the Circle Game</header>
+
+  <div id="controls">
+    <button id="start-btn">Start</button>
+    <button id="pause-btn" disabled>Pause</button>
+    <button id="reset-btn" disabled>Reset</button>
+  </div>
+
+  <div id="game-info">
+    <div>Score: <span id="score">0</span></div>
+    <div id="timer-box">Time Left: <span id="timer">30</span>s</div>
+  </div>
+
+  <div id="circle"></div>
+  <div id="game-over">
+    Game Over! Final Score: <span id="final-score">0</span>
+  </div>
+
+  <script>
+    const circle = document.getElementById("circle");
+    const scoreDisplay = document.getElementById("score");
+    const timerDisplay = document.getElementById("timer");
+    const gameOverDisplay = document.getElementById("game-over");
+    const finalScoreDisplay = document.getElementById("final-score");
+
+    const startBtn = document.getElementById("start-btn");
+    const pauseBtn = document.getElementById("pause-btn");
+    const resetBtn = document.getElementById("reset-btn");
+
+    let score = 0;
+    let timeLeft = 30;
+    let timerInterval = null;
+    let gameActive = false;
+
+    function moveCircle() {
+      const x = Math.random() * (window.innerWidth - 60);
+      const y = Math.random() * (window.innerHeight - 60);
+      circle.style.left = `${x}px`;
+      circle.style.top = `${y}px`;
+    }
+
+    circle.onclick = () => {
+      if (!gameActive) return;
+      score++;
+      scoreDisplay.textContent = score;
+      moveCircle();
+    };
+
+    function updateTimer() {
+      timeLeft--;
+      if (timeLeft <= 0) endGame();
+    }
+
+    function startGame() {
+      score = 0;
+      timeLeft = 30;
+      scoreDisplay.textContent = score;
+      gameOverDisplay.style.display = "none";
+
+      startBtn.disabled = true;
+      pauseBtn.disabled = false;
+      resetBtn.disabled = false;
+
+      gameActive = true;
+      circle.style.display = "block";
+      moveCircle();
+
+      timerInterval = setInterval(updateTimer, 1000);
+    }
+
+    function pauseGame() {
+      if (!gameActive) return;
+      clearInterval(timerInterval);
+      gameActive = false;
+      pauseBtn.textContent = "Resume";
+    }
+
+    function resumeGame() {
+      if (gameActive) return;
+      gameActive = true;
+      pauseBtn.textContent = "Pause";
+      timerInterval = setInterval(updateTimer, 1000);
+    }
+
+    function resetGame() {
+      clearInterval(timerInterval);
+      gameActive = false;
+      startBtn.disabled = false;
+      pauseBtn.disabled = true;
+      resetBtn.disabled = true;
+      pauseBtn.textContent = "Pause";
+
+      circle.style.display = "none";
+      gameOverDisplay.style.display = "none";
+      scoreDisplay.textContent = "0";
+    }
+
+    function endGame() {
+      clearInterval(timerInterval);
+      gameActive = false;
+      circle.style.display = "none";
+      finalScoreDisplay.textContent = score;
+      gameOverDisplay.style.display = "block";
+      pauseBtn.disabled = true;
+    }
+
+    startBtn.addEventListener("click", startGame);
+    pauseBtn.addEventListener("click", () => {
+      gameActive ? pauseGame() : resumeGame();
+    });
+    resetBtn.addEventListener("click", resetGame);
+  </script>
+</body>
+</html>

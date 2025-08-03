@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Slot Machine</title>
+    <style>
+        body { text-align: center; font-family: Arial, sans-serif; margin: 0; padding: 0; }
+        .container { width: 90%; margin: auto; max-width: 400px; }
+        .slot-container { 
+            display: grid; 
+            grid-template-columns: repeat(5, 1fr); 
+            gap: 5px; 
+            justify-content: center; 
+        }
+        .slot { 
+            width: 100%; 
+            aspect-ratio: 1; 
+            border: 2px solid #333; 
+            font-size: 2em; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            background: linear-gradient(120deg, #ffcc00, #ff6600);
+            border-radius: 10px;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+        }
+        button { 
+            width: 100%; 
+            margin-top: 15px; 
+            padding: 10px; 
+            font-size: 1.2em; 
+            cursor: pointer;
+            background-color: #28a745; 
+            color: white; 
+            border: none; 
+            border-radius: 5px;
+        }
+        .balance, .result { font-size: 1.2em; margin-top: 10px; }
+        .disclaimer, .real-token { font-size: 0.8em; color: gray; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Slot Machine</h1>
+        <div class="balance">Balance: <span id="balance">10.0</span> WorkTokens</div>
+        <div class="result">Last Win/Loss: <span id="result">-0.5 WT</span></div>
+        <div class="slot-container">
+            <div class="slot">?</div> <div class="slot">?</div> <div class="slot">?</div> <div class="slot">?</div> <div class="slot">?</div>
+            <div class="slot">?</div> <div class="slot">?</div> <div class="slot">?</div> <div class="slot">?</div> <div class="slot">?</div>
+            <div class="slot">?</div> <div class="slot">?</div> <div class="slot">?</div> <div class="slot">?</div> <div class="slot">?</div>
+        </div>
+        <button onclick="spin()">Spin (0.5 WT)</button>
+        <button onclick="addTokens()">Add 10 WorkTokens</button>
+        <div class="disclaimer">These are simulated WorkTokens and cannot be withdrawn.</div>
+        <div class="real-token">
+            Looking to trade or buy real WorkTokens? Visit  
+            <a href="https://www.mintme.com/token/WorkTH/invite" target="_blank">MintMe WorkTokens</a>.
+        </div>
+    </div>
+
+    <script>
+        let balance = 10.0;
+        const symbols = ['🍒', '🍋', '🍊', '🍇', '🔔'];
+
+        function spin() {
+            if (balance < 0.5) {
+                alert("Not enough WorkTokens!");
+                return;
+            }
+            balance -= 0.5;
+
+            let slots = document.querySelectorAll('.slot');
+            let results = [];
+            slots.forEach(slot => {
+                let symbol = symbols[Math.floor(Math.random() * symbols.length)];
+                slot.textContent = symbol;
+                results.push(symbol);
+            });
+
+            let winnings = calculatePrizes(results);
+            balance += winnings;
+            document.getElementById("balance").textContent = balance.toFixed(3);
+            document.getElementById("result").textContent = (winnings - 0.5).toFixed(3) + " WT";
+        }
+
+        function calculatePrizes(results) {
+            let prize = 0;
+            for (let i = 0; i < results.length - 1; i++) {
+                let count = 1;
+                while (i + count < results.length && results[i] === results[i + count]) {
+                    count++;
+                }
+                if (count === 2) prize += 0.001;
+                else if (count === 3) prize += 0.01;
+                else if (count === 4) prize += 1;
+                else if (count >= 5) prize += 5;
+                i += count - 1;
+            }
+            return prize;
+        }
+
+        function addTokens() {
+            balance += 10;
+            document.getElementById("balance").textContent = balance.toFixed(3);
+        }
+    </script>
+</body>
+</html>

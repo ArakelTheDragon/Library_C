@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dino Dash</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #e0f7fa;
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .game {
+      position: relative;
+      width: 90vw;
+      height: 300px;
+      overflow: hidden;
+      background: linear-gradient(to top, #81d4fa 50%, #c8e6c9 50%);
+      border: 2px solid #00796b;
+      border-radius: 10px;
+      touch-action: manipulation;
+    }
+
+    #dino {
+      position: absolute;
+      bottom: 0;
+      left: 40px;
+      width: 40px;
+      height: 40px;
+      background-color: #388e3c;
+      border-radius: 8px;
+      transition: bottom 0.1s;
+    }
+
+    .jump {
+      animation: jump 0.5s ease-out;
+    }
+
+    @keyframes jump {
+      0%   { bottom: 0; }
+      50%  { bottom: 100px; }
+      100% { bottom: 0; }
+    }
+
+    #obstacle {
+      position: absolute;
+      right: -40px;
+      bottom: 0;
+      width: 40px;
+      height: 40px;
+      background-color: #d32f2f;
+      animation: moveObstacle 1.5s linear infinite;
+      border-radius: 4px;
+    }
+
+    @keyframes moveObstacle {
+      from { right: -40px; }
+      to   { right: 100vw; }
+    }
+
+    #score {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      font-size: 1.2em;
+      color: #004d40;
+    }
+
+    #disclaimer {
+      margin-top: 10px;
+      font-size: 0.9em;
+      color: #555;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+  <div class="game" onclick="jump()" ontouchstart="jump()">
+    <div id="dino"></div>
+    <div id="obstacle"></div>
+    <div id="score">Score: 0</div>
+  </div>
+
+  <div id="disclaimer">Powered by WorkToken — play responsibly </div>
+
+  <script>
+    const dino = document.getElementById("dino");
+    const obstacle = document.getElementById("obstacle");
+    const scoreDisplay = document.getElementById("score");
+
+    let score = 0;
+    let isJumping = false;
+
+    function jump() {
+      if (isJumping) return;
+      isJumping = true;
+      dino.classList.add("jump");
+      setTimeout(() => {
+        dino.classList.remove("jump");
+        isJumping = false;
+      }, 500);
+    }
+
+    setInterval(() => {
+      let dinoBottom = parseInt(window.getComputedStyle(dino).getPropertyValue("bottom"));
+      let obstacleLeft = obstacle.getBoundingClientRect().left;
+
+      if (obstacleLeft < 80 && obstacleLeft > 40 && dinoBottom < 50) {
+        alert(" Game Over! Your score: " + score);
+        score = 0;
+      } else {
+        score++;
+        scoreDisplay.textContent = "Score: " + score;
+      }
+    }, 100);
+
+    document.addEventListener("keydown", jump);
+  </script>
+</body>
+</html>

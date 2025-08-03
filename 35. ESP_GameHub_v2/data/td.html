@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Harder Tower Defense – Longer Path</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      background: #eef2f3;
+      margin: 0; padding: 20px;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      box-sizing: border-box;
+    }
+    h1 { color: #333; margin-bottom: 10px; }
+    #ui {
+      display: flex; justify-content: center; gap: 20px;
+      font-size: 1.1rem; color: #444; margin-bottom: 10px;
+    }
+    canvas {
+      border: 2px solid #555;
+      background: #fff;
+      max-width: 100%;
+      height: auto;
+    }
+    #instructions {
+      font-size: 0.9rem; color: #555; margin-top: 15px;
+    }
+    #instructions ul {
+      display: inline-block; text-align: left;
+      padding-left: 20px; margin: 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Mini Tower Defense – Long Winding Path</h1>
+  <div id="ui">
+    💰 Money: <span id="money">0</span>
+    🛡 Lives: <span id="lives">0</span>
+    🔢 Level: <span id="level">0</span>
+  </div>
+  <canvas id="game" width="400" height="400"></canvas>
+  <div id="instructions">
+    <strong>How to play:</strong>
+    <ul>
+      <li>🔫 Click an empty cell (off the tan path) to build a tower (cost 100).</li>
+      <li>🎯 Towers automatically shoot enemies in range.</li>
+      <li>💵 Earn 50 money per kill. Survive through 5 increasingly tough waves.</li>
+    </ul>
+  </div>
+
+  <script>
+  (function(){
+    const canvas = document.getElementById('game');
+    const ctx    = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    const CELL = 50, COLS = W/CELL, ROWS = H/CELL;
+
+    // Extended, winding path across 8×8
+    const path = [
+      {x:0,y:4},{x:1,y:4},{x:2,y:4},
+      {x:2,y:3},{x:3,y:3},{x:4,y:3},
+      {x:4,y:2},{x:5,y:2},{x:6,y:2},
+      {x:6,y:3},{x:6,y:4},{x:5,y:4},
+      {x:4,y:4},{x:4,y:5},{x:4,y:6},
+      {x:3,y:6},{x:2,y:6},{x:1,y:6},
+      {x:1,y:7},{x:2,y:7},{x:3,y:7},
+      {x:4,y:7},{x:5,y:7},{x:6,y:7},
+      {x:7,y:7}
+    ];
+
+    // 5 waves with escalating difficulty
+    const levels = [
+      {count: 15, spawnInterval: 90,  hp:  3, speed: 1.2},
+      {count: 25, spawnInterval: 80,  hp:  4, speed: 1.4},
+      {count: 40, spawnInterval: 70,  hp:  5, speed: 1.6},
+      {count: 60, spawnInterval: 60,  hp:  6, speed: 1.8},
+      {count: 80, spawnInterval: 50,  hp:  8, speed: 2.0}
+    ];
+
+    let money         = 200,
+        lives         = 10,
+        currentLevel  = 0,
+        spawned       = 0,
+        spawnTimer    = 0,
+        enemies       = [],
+        towers        = [],
+        bullets       = [],
+        gameOver      = false;
+
+    const moneyEl = document.getElementById('money');
+    const livesEl = document.getElementById('lives');
+    const levelEl = document.getElementById('level');
+    function updateUI(){
+      moneyEl.textContent = money;
+      livesEl.textContent = lives;
+      levelEl.textContent = currentLevel + 1;
+    }
+
+    class Enemy {
+      constructor(hp, speed){
+        this.maxHp    = hp;
+        this.hp       = hp;
+        this.speed    = speed;
+        this.waypoint = 0;
+        this.radius   = 12;
+        this.x = path[0].x * CELL + CELL/2;
+        this.y = path[0].y * CELL + CELL/2;
+      }
+      update(){
+        const next = path[this.waypoint+1];
+        if(!next) return false;
+        const tx = next.x*CELL + CELL/2,
+              ty = next.y*CELL + CELL/2;
+        const dx = tx - this.x, dy = ty - this.y;
+        const dist = Math.hypot(dx,dy);
+        if(dist < this.speed){
+          this.waypoint++;
+          if(this.waypoint >= path.length-1) return false;
+        } else {
+          this.x += this.speed * dx/dist;
+          this.y += this.speed * dy/dist;
+        }
+        return true;
+      }
+      draw(){
+        ctx.fillStyle = 'crimson';
+        ctx.beginPath();
+        ctx.arc(this.x,this.y,this.radius,0,Math.PI*2);
+        ctx.fill();
+        // HP bar
+        const barW = 30, barH = 4;
+        ctx.fillStyle = '#000';
+        ctx.fillRect(this.x-barW/2,this.y-20,barW,barH);
+        ctx.fillStyle = '#0f0';
+        ctx.fillRect(this.x-barW/2,this.y-20, barW * this.hp/this.maxHp, barH);
+      }
+    }
+
+    class Tower {
+      constructor(col,row){
+        this.x = col*CELL + CELL/2;
+        this.y = row*CELL + CELL/2;
+        this.range    = 100;
+        this.fireRate = 50;
+        this.cd       = 0;
+      }
+      update(){
+        if(this.cd>0){ this.cd--; return; }
+        let target=null,md=Infinity;
+        for(let e of enemies){
+          const d = Math.hypot(e.x-this.x,e.y-this.y);
+          if(d< this.range && d<md){ md=d; target=e; }
+        }
+        if(target){
+          bullets.push(new Bullet(this.x,this.y,target));
+          this.cd = this.fireRate;
+        }
+      }
+      draw(){
+        ctx.fillStyle = 'dodgerblue';
+        ctx.beginPath();
+        ctx.arc(this.x,this.y,15,0,Math.PI*2);
+        ctx.fill();
+      }
+    }
+
+    class Bullet {
+      constructor(x,y,target){
+        this.x = x; this.y = y;
+        this.target = target;
+        this.speed  = 5;
+        this.radius = 4;
+      }
+      update(){
+        if(!this.target) return false;
+        const dx = this.target.x - this.x,
+              dy = this.target.y - this.y;
+        const dist = Math.hypot(dx,dy);
+        if(dist < this.speed){
+          this.target.hp--;
+          return false;
+        }
+        this.x += this.speed * dx/dist;
+        this.y += this.speed * dy/dist;
+        return this.target.hp>0;
+      }
+      draw(){
+        ctx.fillStyle = '#333';
+        ctx.beginPath();
+        ctx.arc(this.x,this.y,this.radius,0,Math.PI*2);
+        ctx.fill();
+      }
+    }
+
+    function loop(){
+      if(gameOver) return;
+      const lvl = levels[currentLevel];
+      spawnTimer++;
+      if(spawned<lvl.count && spawnTimer>lvl.spawnInterval){
+        enemies.push(new Enemy(lvl.hp,lvl.speed));
+        spawned++; spawnTimer=0;
+      }
+
+      // update enemies
+      enemies = enemies.filter(e=>{
+        if(!e.update()){
+          lives--; livesEl.textContent = lives;
+          return false;
+        }
+        return true;
+      });
+
+      // towers & bullets
+      towers.forEach(t=>t.update());
+      bullets = bullets.filter(b=>b.update());
+
+      // handle kills
+      enemies = enemies.filter(e=>{
+        if(e.hp<=0){
+          money += 50;
+          moneyEl.textContent = money;
+          return false;
+        }
+        return true;
+      });
+
+      // draw
+      ctx.clearRect(0,0,W,H);
+      for(let r=0;r<ROWS;r++){
+        for(let c=0;c<COLS;c++){
+          ctx.strokeStyle='#ccc';
+          ctx.strokeRect(c*CELL,r*CELL,CELL,CELL);
+        }
+      }
+      for(let p of path){
+        ctx.fillStyle='#deb887';
+        ctx.fillRect(p.x*CELL,p.y*CELL,CELL,CELL);
+      }
+      towers.forEach(t=>t.draw());
+      enemies.forEach(e=>e.draw());
+      bullets.forEach(b=>b.draw());
+
+      // level end?
+      if(spawned===lvl.count && enemies.length===0){
+        if(currentLevel<levels.length-1){
+          currentLevel++;
+          spawned=0; spawnTimer=0;
+          updateUI();
+        } else {
+          gameOver=true;
+          return setTimeout(()=>drawEnd(true),200);
+        }
+      }
+      if(lives<=0){
+        gameOver=true;
+        return setTimeout(()=>drawEnd(false),200);
+      }
+      requestAnimationFrame(loop);
+    }
+
+    function drawEnd(win){
+      ctx.fillStyle='rgba(0,0,0,0.6)';
+      ctx.fillRect(0,0,W,H);
+      ctx.fillStyle='#fff';
+      ctx.font='28px Arial';
+      const msg = win ? 'You Win!' : 'Game Over';
+      const w = ctx.measureText(msg).width;
+      ctx.fillText(msg,(W-w)/2,H/2);
+    }
+
+    // place towers
+    canvas.addEventListener('click', e=>{
+      const rect=canvas.getBoundingClientRect();
+      const mx=e.clientX-rect.left, my=e.clientY-rect.top;
+      const c=Math.floor(mx/CELL), r=Math.floor(my/CELL);
+      const onPath   = path.some(p=>p.x===c && p.y===r);
+      const hasTower = towers.some(t=>Math.floor(t.x/CELL)===c && Math.floor(t.y/CELL)===r);
+      if(!onPath && !hasTower && money>=100){
+        towers.push(new Tower(c,r));
+        money-=100; updateUI();
+      }
+    });
+
+    updateUI();
+    loop();
+  })();
+  </script>
+</body>
+</html>

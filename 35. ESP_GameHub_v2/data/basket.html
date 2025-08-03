@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Falling Object Catcher</title>
+  <style>
+    body {
+      margin: 0;
+      background: #f3f3f3;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      font-family: Arial, sans-serif;
+      flex-direction: column;
+    }
+    canvas {
+      background: #3498db;
+      border: 2px solid #fff;
+      display: block;
+      width: 90%;
+      height: 60%;
+      margin-bottom: 5%;
+    }
+    .controls {
+      display: flex;
+      justify-content: center;
+      gap: 2%;
+      width: 90%;
+      flex-wrap: wrap;
+    }
+    .btn {
+      padding: 3% 5%;
+      background: #2ecc71;
+      border: none;
+      color: white;
+      font-size: 1.5em;
+      margin: 1%;
+      border-radius: 5px;
+      cursor: pointer;
+      width: 40%; /* Button width adjusted to 40% */
+      box-sizing: border-box;
+    }
+    .btn:active {
+      background: #27ae60;
+    }
+    .pause-btn {
+      background: #e74c3c;
+    }
+    .pause-btn:active {
+      background: #c0392b;
+    }
+    .speed-btn {
+      background: #f39c12;
+    }
+    .speed-btn:active {
+      background: #e67e22;
+    }
+    .info {
+      font-size: 1.5em;
+      margin-top: 5%;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="game"></canvas>
+<div class="controls">
+  <button class="btn" onclick="moveBasket('left')">Move Left</button>
+  <button class="btn" onclick="moveBasket('right')">Move Right</button>
+  <button class="btn pause-btn" onclick="togglePause()">Pause</button>
+  <button class="btn speed-btn" onclick="adjustSpeed()">Adjust Speed</button>
+</div>
+<div class="info">
+  <p id="score">Score: 0</p>
+  <p id="speed">Speed: 5</p>
+</div>
+
+<script>
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+
+  // Set canvas size dynamically based on the screen
+  canvas.width = window.innerWidth * 0.9;
+  canvas.height = window.innerHeight * 0.6;
+
+  const basketWidth = canvas.width * 0.2; // Basket width as a percentage of the canvas width
+  const basketHeight = canvas.height * 0.05; // Basket height as a percentage of the canvas height
+  let basketX = (canvas.width - basketWidth) / 2;
+  const basketSpeed = canvas.width * 0.05; // Speed based on canvas width
+
+  let score = 0;
+  const fallingObjects = [];
+  const objectSize = canvas.width * 0.1; // Object size as a percentage of the canvas width
+  let objectSpeed = canvas.height * 0.03; // Initial object speed based on canvas height
+
+  let isPaused = false;
+
+  function createFallingObject() {
+    if (isPaused) return;
+    const x = Math.random() * (canvas.width - objectSize);
+    fallingObjects.push({ x, y: 0, caught: false });
+  }
+
+  function drawBasket() {
+    ctx.fillStyle = '#2ecc71';
+    ctx.fillRect(basketX, canvas.height - basketHeight, basketWidth, basketHeight);
+  }
+
+  function drawFallingObjects() {
+    ctx.fillStyle = '#e74c3c';
+    fallingObjects.forEach((obj, index) => {
+      if (!obj.caught) {
+        ctx.fillRect(obj.x, obj.y, objectSize, objectSize);
+        obj.y += objectSpeed;
+
+        // Check if the object hits the basket
+        if (
+          obj.y + objectSize >= canvas.height - basketHeight &&
+          obj.x + objectSize >= basketX &&
+          obj.x <= basketX + basketWidth
+        ) {
+          obj.caught = true;
+          score++;
+        }
+
+        // Remove the object if it falls out of the screen
+        if (obj.y > canvas.height) {
+          fallingObjects.splice(index, 1);
+        }
+      }
+    });
+  }
+
+  function moveBasket(direction) {
+    if (isPaused) return;
+    if (direction === 'left' && basketX > 0) {
+      basketX -= basketSpeed;
+    } else if (direction === 'right' && basketX < canvas.width - basketWidth) {
+      basketX += basketSpeed;
+    }
+  }
+
+  function updateGame() {
+    if (isPaused) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawBasket();
+    drawFallingObjects();
+
+    // Update score and speed
+    document.getElementById('score').textContent = 'Score: ' + score;
+    document.getElementById('speed').textContent = 'Speed: ' + objectSpeed.toFixed(2);
+
+    // Continue the game loop
+    requestAnimationFrame(updateGame);
+  }
+
+  function togglePause() {
+    isPaused = !isPaused;
+    if (!isPaused) updateGame();
+  }
+
+  function adjustSpeed() {
+    if (objectSpeed <= 0) {
+      objectSpeed = canvas.height * 0.03; // Reset to max speed
+    } else {
+      objectSpeed -= 1.00; // Decrease speed
+    }
+  }
+
+  // Start the game and create falling objects at intervals
+  setInterval(createFallingObject, 1000); // New object every second
+
+  updateGame(); // Start the game loop
+</script>
+
+</body>
+</html>

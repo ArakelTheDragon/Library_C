@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Typing Speed Test</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #fdfdfd;
+      color: #333;
+      text-align: center;
+      padding: 30px;
+    }
+
+    h1 {
+      margin-bottom: 10px;
+    }
+
+    #instructions {
+      font-size: 16px;
+      margin-bottom: 20px;
+      color: #555;
+    }
+
+    #word {
+      font-size: 32px;
+      margin: 20px 0;
+      font-weight: bold;
+      color: #007bff;
+    }
+
+    input[type="text"] {
+      font-size: 20px;
+      padding: 10px;
+      width: 300px;
+      margin-bottom: 20px;
+    }
+
+    #score {
+      font-size: 18px;
+      margin: 10px;
+    }
+
+    #result {
+      margin-top: 30px;
+      font-size: 24px;
+      display: none;
+    }
+
+    #start-btn {
+      padding: 10px 20px;
+      font-size: 18px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Typing Speed Test</h1>
+
+  <div id="instructions">
+    Type the words as fast and accurately as you can.<br>
+    Click "Start Game" and press Enter after each word.<br>
+    You have 60 seconds. Your score is based on correct words typed.
+  </div>
+
+  <div id="score">Score: 0</div>
+  <div id="word">click start</div>
+
+  <input type="text" id="input" placeholder="Type here..." disabled />
+  <br><br>
+  <button id="start-btn">Start Game</button>
+
+  <div id="result"></div>
+
+  <script>
+    const words = [
+      "apple", "banana", "cherry", "dragon", "eagle", "flame", "giant",
+      "hammer", "island", "jungle", "king", "lemon", "magic", "night",
+      "ocean", "power", "queen", "river", "stone", "tiger", "umbrella",
+      "vortex", "whale", "xenon", "yacht", "zebra"
+    ];
+
+    const wordEl = document.getElementById("word");
+    const inputEl = document.getElementById("input");
+    const scoreEl = document.getElementById("score");
+    const resultEl = document.getElementById("result");
+    const startBtn = document.getElementById("start-btn");
+
+    let currentWord = "";
+    let score = 0;
+    let correct = 0;
+    let totalTyped = 0;
+    let timeLeft = 60;
+    let timer = null;
+    let gameStarted = false;
+
+    function pickWord() {
+      currentWord = words[Math.floor(Math.random() * words.length)];
+      wordEl.textContent = currentWord;
+    }
+
+    function startGame() {
+      score = 0;
+      correct = 0;
+      totalTyped = 0;
+      timeLeft = 60;
+      gameStarted = true;
+      inputEl.disabled = false;
+      inputEl.value = "";
+      inputEl.focus();
+      scoreEl.textContent = "Score: 0";
+      resultEl.style.display = "none";
+      pickWord();
+
+      timer = setInterval(() => {
+        timeLeft--;
+        if (timeLeft <= 0) {
+          clearInterval(timer);
+          endGame();
+        }
+      }, 1000);
+    }
+
+    function endGame() {
+      gameStarted = false;
+      inputEl.disabled = true;
+      const wpm = correct; // full minute = WPM
+      const accuracy = totalTyped ? Math.round((correct / totalTyped) * 100) : 0;
+      resultEl.innerHTML = `Game Over!<br>WPM: ${wpm}<br>Accuracy: ${accuracy}%`;
+      resultEl.style.display = "block";
+      wordEl.textContent = "click start";
+    }
+
+    inputEl.addEventListener("input", () => {
+      if (!gameStarted) return;
+
+      if (inputEl.value.trim().toLowerCase() === currentWord) {
+        score++;
+        correct++;
+        totalTyped++;
+        inputEl.value = "";
+        scoreEl.textContent = "Score: " + score;
+        pickWord();
+      } else if (inputEl.value.trim().length >= currentWord.length) {
+        totalTyped++;
+      }
+    });
+
+    startBtn.addEventListener("click", () => {
+      clearInterval(timer);
+      startGame();
+    });
+  </script>
+
+</body>
+</html>

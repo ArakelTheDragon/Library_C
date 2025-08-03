@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Falling Bricks Game</title>
+  <style>
+    body {
+      margin: 0;
+      background: linear-gradient(to bottom, #2c3e50, #34495e);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      font-family: Arial, sans-serif;
+      color: white;
+    }
+    canvas {
+      background: #1e272e;
+      border: 5px solid #fff;
+      margin-bottom: 20px;
+    }
+    .controls {
+      display: flex;
+      gap: 10px;
+    }
+    .btn {
+      width: 80px;
+      height: 50px;
+      background: #3498db;
+      border: none;
+      color: white;
+      font-size: 18px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .btn:active {
+      background: #2980b9;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="game" width="300" height="600"></canvas>
+  <div class="controls">
+    <button class="btn" onclick="moveBlock('left')">⬅</button>
+    <button class="btn" onclick="moveBlock('down')">⬇</button>
+    <button class="btn" onclick="moveBlock('right')">➡</button>
+    <button class="btn" onclick="rotateBlock()">⟳</button>
+    <button class="btn" onclick="togglePause()">Pause</button>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+
+    const rows = 20;
+    const cols = 10;
+    const blockSize = 30;
+    const colors = ['#1abc9c', '#e74c3c', '#3498db', '#f1c40f', '#9b59b6'];
+    let board = Array.from({ length: rows }, () => Array(cols).fill(0));
+    let currentBlock, nextBlock, isPaused = false, gameOver = false;
+
+    // Define the blocks
+    const blocks = [
+      [[1, 1, 1, 1]], // I-block
+      [[1, 1], [1, 1]], // O-block
+      [[1, 1, 0], [0, 1, 1]], // Z-block
+      [[0, 1, 1], [1, 1, 0]], // S-block
+      [[0, 1, 0], [1, 1, 1]], // T-block
+    ];
+
+    // Random block generator
+    function getRandomBlock() {
+      const block = blocks[Math.floor(Math.random() * blocks.length)];
+      return { shape: block, color: colors[Math.floor(Math.random() * colors.length)], x: 3, y: 0 };
+    }
+
+    // Rotate the block
+    function rotateBlock() {
+      if (gameOver || isPaused) return;
+      const newShape = currentBlock.shape[0].map((_, colIndex) =>
+        currentBlock.shape.map(row => row[colIndex]).reverse()
+      );
+      if (isValidMove({ ...currentBlock, shape: newShape }, 0, 0)) {
+        currentBlock.shape = newShape;
+      }
+      draw();
+    }
+
+    // Draw the board
+    function drawBoard() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < cols; col++) {
+          if (board[row][col]) {
+            ctx.fillStyle = board[row][col];
+            ctx.fillRect(col * blockSize, row * blockSize, blockSize, blockSize);
+            ctx.strokeStyle = '#2c3e50';
+            ctx.strokeRect(col * blockSize, row * blockSize, blockSize, blockSize);
+          }
+        }
+      }
+    }
+
+    // Draw a block
+    function drawBlock(block) {
+      ctx.fillStyle = block.color;
+      block.shape.forEach((row, y) => {
+        row.forEach((cell, x) => {
+          if (cell) {
+            ctx.fillRect((block.x + x) * blockSize, (block.y + y) * blockSize, blockSize, blockSize);
+            ctx.strokeStyle = '#2c3e50';
+            ctx.strokeRect((block.x + x) * blockSize, (block.y + y) * blockSize, blockSize, blockSize);
+          }
+        });
+      });
+    }
+
+    // Move the block
+    function moveBlock(direction) {
+      if (gameOver || isPaused) return;
+      if (direction === 'left' && isValidMove(currentBlock, -1, 0)) currentBlock.x--;
+      if (direction === 'right' && isValidMove(currentBlock, 1, 0)) currentBlock.x++;
+      if (direction === 'down' && isValidMove(currentBlock, 0, 1)) currentBlock.y++;
+      draw();
+    }
+
+    // Check for valid moves
+    function isValidMove(block, dx, dy) {
+      return block.shape.every((row, y) =>
+        row.every((cell, x) =>
+          !cell ||
+          (block.y + y + dy < rows &&
+            block.x + x + dx >= 0 &&
+            block.x + x + dx < cols &&
+            !board[block.y + y + dy][block.x + x + dx])
+        )
+      );
+    }
+
+    // Merge the block into the board
+    function mergeBlock(block) {
+      block.shape.forEach((row, y) => {
+        row.forEach((cell, x) => {
+          if (cell) board[block.y + y][block.x + x] = block.color;
+        });
+      });
+    }
+
+    // Clear full rows
+    function clearRows() {
+      board = board.filter(row => row.some(cell => !cell));
+      while (board.length < rows) board.unshift(Array(cols).fill(0));
+    }
+
+    // Game loop
+    function gameLoop() {
+      if (gameOver || isPaused) return;
+
+      if (isValidMove(currentBlock, 0, 1)) {
+        currentBlock.y++;
+      } else {
+        mergeBlock(currentBlock);
+        clearRows();
+        currentBlock = nextBlock;
+        nextBlock = getRandomBlock();
+        if (!isValidMove(currentBlock, 0, 0)) {
+          gameOver = true;
+          alert('Game Over!');
+        }
+      }
+
+      draw();
+      setTimeout(gameLoop, 500);
+    }
+
+    // Draw everything
+    function draw() {
+      drawBoard();
+      drawBlock(currentBlock);
+    }
+
+    // Pause or resume the game
+    function togglePause() {
+      isPaused = !isPaused;
+      if (!isPaused) gameLoop();
+    }
+
+    // Initialize the game
+    function init() {
+      board = Array.from({ length: rows }, () => Array(cols).fill(0));
+      currentBlock = getRandomBlock();
+      nextBlock = getRandomBlock();
+      isPaused = false;
+      gameOver = false;
+      gameLoop();
+    }
+
+    init();
+  </script>
+</body>
+</html>
